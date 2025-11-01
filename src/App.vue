@@ -1,230 +1,343 @@
 <template>
-  <main class="wrap" role="main">
-    <!-- background: hanji paper + gradient sky -->
-    <div class="bg" aria-hidden="true"></div>
+  <main class="scene">
+    <!-- Night gradient sky -->
+    <div class="sky"></div>
 
-    <!-- header / hero -->
-    <header class="hero">
-      <div class="moon" :class="{ crescent: !isFullMoon }" aria-hidden="true">
-        <div class="r1"/><div class="r2"/><div class="r3"/>
+    <!-- Big Moon -->
+    <div class="moon" aria-hidden="true">
+      <div class="crater c1"></div>
+      <div class="crater c2"></div>
+      <div class="crater c3"></div>
+    </div>
+
+    <!-- Floating lanterns -->
+    <div class="lanterns">
+      <div
+          v-for="lan in lanterns"
+          :key="lan.id"
+          class="lantern"
+          :style="lan.style"
+          aria-hidden="true"
+      >
+        <svg viewBox="0 0 64 96" class="lantern-svg">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-opacity=".95"/>
+              <stop offset="100%" stop-opacity=".65"/>
+            </linearGradient>
+          </defs>
+          <path
+              d="M32 2 C50 6 62 20 62 40 v30 c0 18-14 24-30 24S2 88 2 70V40C2 20 14 6 32 2z"
+              fill="url(#g)"
+          />
+          <ellipse cx="32" cy="74" rx="14" ry="8" class="lantern-glow"/>
+          <rect x="26" y="86" width="12" height="6" rx="2" class="lantern-knot"/>
+        </svg>
       </div>
-      <div class="heading">
-        <h1>한가위, 마음 가득 🎑</h1>
-        <p class="sub">담백한 한지 카드 스타일의 Chuseok 페이지</p>
-        <p class="today">오늘은 <strong>{{ dateText }}</strong> 입니다.</p>
-      </div>
-    </header>
+    </div>
 
-    <!-- aligned action icons -->
-    <nav class="rail" aria-label="동작">
-      <button class="icon" @click="toggleMoon" :aria-pressed="isFullMoon.toString()">
-        <svg viewBox="0 0 48 48" class="ico"><title>달 모양</title>
-          <circle cx="24" cy="24" r="16" />
-          <circle v-if="!isFullMoon" cx="16" cy="22" r="14" class="cut"/>
-        </svg>
-        <span>달</span>
-      </button>
-      <button class="icon" @click="focusInput" title="소원 적기">
-        <svg viewBox="0 0 48 48" class="ico"><title>소원</title>
-          <path d="M24 6c9.4 0 17 7.6 17 17s-7.6 17-17 17S7 32.4 7 23 14.6 6 24 6Z"/>
-          <path class="cut" d="M15 24h18M24 15v18" />
-        </svg>
-        <span>소원</span>
-      </button>
-      <button class="icon" @click="shareOrCopy" title="공유">
-        <svg viewBox="0 0 48 48" class="ico"><title>공유</title>
-          <circle cx="12" cy="26" r="4"/><circle cx="34" cy="12" r="4"/><circle cx="36" cy="36" r="4"/>
-          <path class="cut" d="M15 25l15-11M15 27l17 8"/>
-        </svg>
-        <span>공유</span>
-      </button>
-      <label class="icon toggle" :aria-pressed="dense.toString()">
-        <input type="checkbox" v-model="dense" />
-        <svg viewBox="0 0 48 48" class="ico" aria-hidden="true">
-          <rect x="10" y="14" width="28" height="6" rx="3"/>
-          <rect x="10" y="24" width="22" height="6" rx="3"/>
-          <rect x="10" y="34" width="16" height="6" rx="3"/>
-        </svg>
-        <span>콤팩트</span>
-      </label>
-    </nav>
+    <!-- Content Card -->
+    <section class="card">
+      <header class="title-wrap">
+        <h1 class="title">한가위 잘 보내세요 🌕</h1>
+        <p class="subtitle">
+          넉넉한 보름달처럼 마음도 가득 차오르길.
+        </p>
+        <p class="date" v-if="dText">
+          오늘은 <strong>{{ dText }}</strong> 입니다.
+        </p>
+      </header>
 
-    <!-- card -->
-    <section class="card" :class="{ dense }">
-      <form class="wish" @submit.prevent="addWish">
-        <input ref="wishInput" v-model.trim="draft" class="input" type="text" placeholder="소원을 적고 Enter" maxlength="80" aria-label="소원 입력" />
-        <button class="btn" :disabled="!draft">적기</button>
+      <form class="wish-form" @submit.prevent="addWish">
+        <input
+            v-model.trim="draft"
+            type="text"
+            class="wish-input"
+            placeholder="소원을 적어보세요… (Enter)"
+            maxlength="80"
+        />
+        <button class="wish-btn" :disabled="!draft">적기</button>
       </form>
 
-      <ul v-if="wishes.length" class="list" role="list">
-        <li v-for="w in wishes" :key="w.id" class="item">
-          <span class="txt">“{{ w.text }}”</span>
-          <time class="ts" :datetime="w.ts.toISOString()">{{ formatTime(w.ts) }}</time>
-          <button class="x" @click="removeWish(w.id)" aria-label="삭제">×</button>
+      <ul v-if="wishes.length" class="wish-list">
+        <li v-for="w in wishes" :key="w.id" class="wish-item">
+          <span class="wish-text">“{{ w.text }}”</span>
+          <button class="del-btn" @click="removeWish(w.id)" title="삭제">×</button>
         </li>
       </ul>
 
-      <div class="actions">
+      <footer class="actions">
+        <button class="ghost" @click="shareOrCopy">페이지 공유하기</button>
         <button class="ghost" @click="clearAll" :disabled="!wishes.length">전체 삭제</button>
-        <a class="ghost" :href="exportURL" download="wishes.json">내보내기</a>
-      </div>
+      </footer>
     </section>
 
-    <!-- gentle lanterns (fewer, slower) -->
-    <div class="lanterns" aria-hidden="true">
-      <div v-for="lan in lanterns" :key="lan.id" class="lan" :style="lan.style"></div>
-    </div>
-
-    <footer class="credit">© {{ year }} Chuseok • Vue 3 + TS + Vite</footer>
+    <footer class="credit">
+      <span>© {{ year }} Chuseok • Vue + TS + Vite</span>
+    </footer>
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
-type Wish = { id: string; text: string; ts: Date }
-const LS_KEY = 'chuseok:wishes:hanji'
+type Wish = { id: string; text: string }
+const LS_KEY = 'chuseok:wishes'
 
 const wishes = ref<Wish[]>([])
-const draft = ref('')
-const wishInput = ref<HTMLInputElement | null>(null)
-const dense = ref(false)
+const draft = ref<string>('')
 
-function focusInput() { wishInput.value?.focus() }
-function addWish() {
-  if (!draft.value) return
-  wishes.value.unshift({ id: crypto.randomUUID(), text: draft.value, ts: new Date() })
-  draft.value = ''
-}
-function removeWish(id: string) { wishes.value = wishes.value.filter(w => w.id !== id) }
-function clearAll() { if (wishes.value.length && confirm('모든 소원을 삭제할까요?')) wishes.value = [] }
-function formatTime(d: Date) {
-  try { return new Intl.DateTimeFormat('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d) } catch { return '' }
-}
-
+/** Load & persist wishes */
 onMounted(() => {
   try {
     const raw = localStorage.getItem(LS_KEY)
-    if (raw) wishes.value = (JSON.parse(raw) as { id: string; text: string; ts: string }[])\
-  .map(w => ({ ...w, ts: new Date(w.ts) }))
-  } catch {}
+    if (raw) wishes.value = JSON.parse(raw) as Wish[]
+  } catch { /* noop */ }
 })
 watch(wishes, v => {
-  const safe = v.map(w => ({ ...w, ts: w.ts.toISOString() }))
-  localStorage.setItem(LS_KEY, JSON.stringify(safe))
+  localStorage.setItem(LS_KEY, JSON.stringify(v))
 }, { deep: true })
 
-async function shareOrCopy() {
-  const text = '한가위 복 많이 받으세요 🎑'
-  const url = location.href
-  try {
-    // @ts-expect-error share
-    if (navigator.share) await navigator.share({ title: document.title || text, text, url })
-    else { await navigator.clipboard.writeText(url); alert('링크 복사 완료!') }
-  } catch {}
+function addWish() {
+  if (!draft.value) return
+  wishes.value.unshift({ id: crypto.randomUUID(), text: draft.value })
+  draft.value = ''
+}
+function removeWish(id: string) {
+  wishes.value = wishes.value.filter(w => w.id !== id)
+}
+function clearAll() {
+  if (!wishes.value.length) return
+  if (confirm('모든 소원을 삭제할까요?')) wishes.value = []
 }
 
-const dateText = computed(() => {
-  const now = new Date()
-  const fmt: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }
-  return new Intl.DateTimeFormat('ko-KR', fmt).format(now)
+/** Share / Copy */
+async function shareOrCopy() {
+  const text = '한가위 복 많이 받으세요 🌕'
+  const url = location.href
+  try {
+    if ((navigator as any).share) {
+      await (navigator as any).share({ title: document.title || text, text, url })
+    } else {
+      await navigator.clipboard.writeText(url)
+      alert('링크를 클립보드에 복사했어요!')
+    }
+  } catch {
+    /* user canceled */
+  }
+}
+
+/** Pretty date text (KST) */
+const dText = computed(() => {
+  try {
+    const now = new Date()
+    const opts: Intl.DateTimeFormatOptions = {
+      year: 'numeric', month: 'long', day: 'numeric',
+      weekday: 'long'
+    }
+    return new Intl.DateTimeFormat('ko-KR', opts).format(now)
+  } catch {
+    return ''
+  }
 })
 
-const isFullMoon = ref(true)
-function toggleMoon() { isFullMoon.value = !isFullMoon.value }
-const themeHue = computed(() => isFullMoon.value ? 38 : 208)
-
-// soft lantern particles
+/** Lanterns (animated) */
 type Lantern = { id: number; style: Record<string, string> }
 const lanterns = reactive<Lantern[]>([])
-function rand(min: number, max: number) { return Math.random() * (max - min) + min }
-function spawn(n = 8) {
-  lanterns.length = 0
+function rand(min: number, max: number) {
+  return Math.random() * (max - min) + min
+}
+function spawnLanterns(n = 10) {
   for (let i = 0; i < n; i++) {
     const left = `${rand(0, 100)}%`
     const delay = `${rand(0, 6).toFixed(2)}s`
-    const dur = `${rand(18, 28).toFixed(1)}s`
-    const size = `${rand(8, 18).toFixed(0)}px`
-    const hue = String(Math.floor(rand(20, 46)))
-    lanterns.push({ id: i, style: { left, '--d': delay, '--t': dur, '--s': size, '--h': hue } })
+    const duration = `${rand(12, 22).toFixed(1)}s`
+    const scale = rand(0.8, 1.2).toFixed(2)
+    const hue = Math.floor(rand(18, 48)) // warm
+    lanterns.push({
+      id: i,
+      style: {
+        left,
+        '--delay': delay,
+        '--duration': duration,
+        '--scale': scale,
+        '--hue': String(hue)
+      } as Record<string, string>
+    })
   }
 }
-onMounted(() => spawn())
+onMounted(() => spawnLanterns(12))
 
 const year = new Date().getFullYear()
-
-const exportURL = computed(() => {
-  const arr = wishes.value.map(w => ({ id: w.id, text: w.text, ts: w.ts.toISOString() }))
-  return 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(arr, null, 2))
-})
 </script>
 
 <style scoped>
+/* --- Layout --- */
 :root { color-scheme: dark; }
-.wrap {
-  --h: v-bind(themeHue);
-  --paper: radial-gradient(1200px 900px at 70% 20%, rgba(255,255,255,.06), transparent 55%),
-  radial-gradient(800px 600px at 20% 10%, rgba(255,255,255,.05), transparent 55%),
-  linear-gradient(#0b1026, #1a2248 60%, #0b1026);
-  --ink: #f7f9ff; --muted: #d6dbff;
-  --accent: hsl(var(--h) 92% 60%);
-  min-height: 100svh; display: grid; place-items: center; padding: clamp(16px,3vw,32px);
-  font-family: ui-rounded, system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, "Malgun Gothic", "맑은 고딕", sans-serif;
-  position: relative; overflow: hidden; color: var(--ink);
+.scene {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 2vw, 32px);
+  font-family: ui-rounded, system-ui, -apple-system, "Apple SD Gothic Neo",
+  "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, "Malgun Gothic",
+  "맑은 고딕", sans-serif;
 }
-.bg { position: absolute; inset: 0; background: var(--paper); z-index: -2; }
-
-.hero { width: min(880px, 96%); display: grid; grid-template-columns: auto 1fr; gap: clamp(12px,3vw,20px); align-items: center; }
-.moon { width: min(22vmin, 220px); aspect-ratio: 1; border-radius: 50%; position: relative; background:
-    radial-gradient(circle at 35% 35%, rgba(255,255,255,.35), transparent 45%),
-    radial-gradient(circle at 60% 60%, rgba(255,255,255,.2), transparent 46%),
-    radial-gradient(circle at 50% 50%, #ffe7b0, #ffd36b 60%, #f3b94f 75%, #e6a23a 100%);
-  box-shadow: 0 0 70px 20px rgba(255, 214, 132, .25), 0 0 160px 40px rgba(255, 214, 132, .12);
+.sky {
+  position: absolute; inset: 0;
+  background:
+      radial-gradient(1200px 800px at 70% 20%, rgba(255,255,255,.07), transparent 60%),
+      radial-gradient(800px 600px at 20% 10%, rgba(255,255,255,.05), transparent 60%),
+      linear-gradient(#0a0f24, #1a2447 60%, #0b0f24);
+  z-index: -2;
 }
-.moon.crescent::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #0b1026; transform: translateX(18%); filter: blur(.2px); }
-.moon .r1,.moon .r2,.moon .r3{ position:absolute; border-radius: 50%; opacity:.35; filter: blur(.4px); background: radial-gradient(circle at 35% 35%, rgba(0,0,0,.25), rgba(0,0,0,.12) 40%, transparent 60%);}
-.moon .r1{ width:16%; aspect-ratio:1; left:22%; top:30%; }
-.moon .r2{ width:10%; aspect-ratio:1; left:55%; top:52%; }
-.moon .r3{ width:13%; aspect-ratio:1; left:45%; top:24%; }
 
-.heading h1{ margin:0; font-size:clamp(1.6rem,3.6vw,2.4rem); font-weight:900; text-shadow:0 2px 18px rgba(255,255,255,.12); }
-.heading .sub{ margin:.25rem 0 0; color: var(--muted); }
-.heading .today{ margin:.25rem 0 0; color:#e5e9ff; }
+/* --- Moon --- */
+.moon {
+  position: absolute;
+  top: clamp(-80px, -6vw, -40px);
+  right: clamp(-40px, -3vw, -10px);
+  width: min(34vmin, 320px);
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background:
+      radial-gradient(circle at 35% 35%, rgba(255,255,255,.35), transparent 45%),
+      radial-gradient(circle at 60% 60%, rgba(255,255,255,.2), transparent 46%),
+      radial-gradient(circle at 50% 50%, #ffeab5, #ffd36b 60%, #f3b94f 75%, #e6a23a 100%);
+  box-shadow:
+      0 0 60px 20px rgba(255, 214, 132, .25),
+      0 0 160px 40px rgba(255, 214, 132, .15);
+  z-index: -1;
+  transform: translate3d(0,0,0);
+}
+.crater {
+  position: absolute;
+  background: radial-gradient(circle at 35% 35%, rgba(0,0,0,.25), rgba(0,0,0,.15) 40%, rgba(0,0,0,0) 60%);
+  border-radius: 50%;
+  opacity: .35;
+  filter: blur(0.3px);
+}
+.c1 { width: 16%; aspect-ratio: 1; left: 22%; top: 30%; }
+.c2 { width: 10%; aspect-ratio: 1; left: 55%; top: 52%; }
+.c3 { width: 13%; aspect-ratio: 1; left: 45%; top: 24%; }
 
-/* rail */
-.rail { width:min(880px,96%); margin:14px auto 10px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-.icon { display:grid; grid-template-rows:auto 1fr; justify-items:center; gap:6px; padding:10px 8px; border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.16); color:var(--ink); cursor:pointer; }
-.icon.toggle { cursor:default; }
-.icon input{ position:absolute; opacity:0; pointer-events:none; }
-.icon span{ font-size:.82rem; color: var(--muted); }
-.ico{ width:28px; height:28px; fill:var(--accent); }
-.cut{ fill:none; stroke:var(--ink); stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; opacity:.9; }
+/* --- Lanterns --- */
+.lanterns { position: absolute; inset: 0; pointer-events: none; }
+.lantern {
+  position: absolute; bottom: -120px;
+  animation: rise var(--duration, 16s) linear var(--delay, 0s) infinite;
+  transform: translateY(0) scale(var(--scale, 1));
+}
+@keyframes rise {
+  0%   { transform: translateY(0)     scale(var(--scale, 1)); opacity: 0; }
+  5%   { opacity: .9; }
+  90%  { opacity: .9; }
+  100% { transform: translateY(-115vh) scale(var(--scale, 1)); opacity: 0; }
+}
+.lantern-svg {
+  width: clamp(26px, 5vw, 56px);
+  height: auto;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.45));
+  fill: hsl(var(--hue, 32) 85% 60%);
+}
+.lantern-glow {
+  fill: rgba(255, 230, 150, .7);
+  filter: blur(1px);
+}
+.lantern-knot { fill: #3b2b1a; opacity: .8; }
 
-/* card */
-.card{ width:min(880px,96%); padding: clamp(14px,3vw,22px); border-radius:16px; border:1px solid rgba(255,255,255,.16); background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); box-shadow: 0 10px 40px rgba(0,0,0,.35); }
-.card.dense .item{ padding:8px 10px; }
+/* --- Card --- */
+.card {
+  width: min(760px, 96%);
+  backdrop-filter: blur(8px);
+  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 20px;
+  padding: clamp(16px, 3vw, 28px);
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+.title-wrap { text-align: center; margin-bottom: 12px; }
+.title {
+  margin: 0 0 4px;
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  letter-spacing: .2px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(255,255,255,.12);
+}
+.subtitle {
+  margin: 0;
+  color: #e7eaff;
+  opacity: .9;
+  font-size: clamp(.95rem, 2.4vw, 1.05rem);
+}
+.date {
+  margin: 8px 0 0;
+  font-size: .95rem;
+  color: #d6dbff;
+  opacity: .9;
+}
 
-.wish{ display:grid; grid-template-columns:1fr auto; gap:10px; }
-.input{ height:44px; padding:0 14px; border-radius:12px; outline:none; background: rgba(12,16,40,.55); border:1px solid rgba(255,255,255,.18); color:var(--ink); }
-.input::placeholder{ color: color-mix(in oklab, var(--muted) 70%, #fff 30%); }
-.btn{ height:44px; padding:0 16px; border-radius:12px; border:none; cursor:pointer; font-weight:800; color:#1a1a1a; background: linear-gradient(180deg, hsl(var(--h) 92% 62%), hsl(var(--h) 92% 54%)); box-shadow:0 6px 18px color-mix(in oklab, hsl(var(--h) 92% 62%) 35%, transparent); }
-.btn:disabled{ opacity:.55; cursor:not-allowed; }
+/* --- Wish form --- */
+.wish-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 18px;
+}
+.wish-input {
+  height: 44px;
+  border-radius: 12px;
+  padding: 0 14px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(12,16,40,.55);
+  color: #fff;
+  outline: none;
+}
+.wish-input::placeholder { color: rgba(230,235,255,.6); }
+.wish-btn {
+  height: 44px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #ffd36b, #ffc34b);
+  box-shadow: 0 6px 18px rgba(255, 196, 75, .35);
+}
+.wish-btn:disabled { opacity: .5; cursor: not-allowed; }
 
-.list{ list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
-.item{ display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center; padding:10px 12px; border-radius:12px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); }
-.txt{ color:#f6f8ff; }
-.ts{ font-size:.8rem; color: var(--muted); }
-.x{ width:28px; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.25); color:var(--ink); cursor:pointer; font-size:16px; }
+/* --- Wish list --- */
+.wish-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+.wish-item {
+  display: grid; grid-template-columns: 1fr auto; align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+}
+.wish-text { color: #f3f6ff; }
+.del-btn {
+  width: 28px; height: 28px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.2);
+  color: #fff; cursor: pointer; font-size: 16px; line-height: 1;
+}
 
-.actions{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:12px; }
-.ghost{ padding:10px 14px; border-radius:12px; cursor:pointer; border:1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); color: var(--ink); }
+/* --- Actions --- */
+.actions { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.ghost {
+  padding: 10px 14px; border-radius: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.06); color: #fff;
+}
 
-/* soft lantern dots */
-.lanterns{ position:absolute; inset:0; pointer-events:none; z-index:-1; }
-.lan{ position:absolute; bottom:-40px; width:var(--s); height:var(--s); border-radius:50%; background: hsl(var(--h) 85% 60% / .9); box-shadow: 0 0 18px hsl(var(--h) 85% 60% / .55); animation: float var(--t) linear var(--d) infinite; }
-@keyframes float { 0%{ transform: translateY(0); opacity:0 } 8%{opacity:.9} 92%{opacity:.9} 100%{ transform: translateY(-110vh); opacity:0 } }
-
-.credit{ margin-top:14px; text-align:center; font-size:12px; color: color-mix(in oklab, var(--muted) 85%, #fff 15%); }
-
-@media (max-width: 560px){ .hero{ grid-template-columns:1fr; justify-items:center; text-align:center; } .moon{ width:min(30vmin, 180px); } }
+/* --- Credit --- */
+.credit {
+  position: absolute; inset-inline: 0; bottom: 10px;
+  text-align: center; font-size: 12px; color: rgba(230,235,255,.7);
+}
 </style>
